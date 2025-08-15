@@ -240,6 +240,12 @@ $$"></textarea>
     <script>
         let convertedOutput = '';
         
+        function removeComments(content) {
+            // Remove HTML comments (<!-- ... -->)
+            // This regex handles multi-line comments
+            return content.replace(/<!--[\s\S]*?-->/g, '');
+        }
+        
         function removeFrontmatter(content) {
             if (content.trim().startsWith('---')) {
                 const lines = content.split('\n');
