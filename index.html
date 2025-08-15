@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathJax to SVG Converter</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .input-section {
+            margin-bottom: 30px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .primary-btn {
+            background: #3498db;
+            color: white;
+        }
+        
+        .primary-btn:hover:not(:disabled) {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+        
+        .secondary-btn {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .secondary-btn:hover:not(:disabled) {
+            background: #7f8c8d;
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .output-section {
+            border-top: 2px solid #ecf0f1;
+            padding-top: 30px;
+        }
+        
+        .preview {
+            background: #f8f9fa;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 100px;
+        }
+        
+        .status {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .example {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .example h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        
+        .example code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+    
+    <!-- Load MathJax -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                packages: {'[+]': ['base', 'ams', 'newcommand', 'configmacros', 'action']},
+                processEscapes: true,
+                processEnvironments: true
+            },
+            svg: {
+                fontCache: 'none'
+            },
+            startup: {
+                ready() {
+                    console.log('MathJax is ready');
+                    MathJax.startup.defaultReady();
+                    document.getElementById('convertBtn').disabled = false;
+                    document.getElementById('status').textContent = 'MathJax loaded successfully!';
+                    document.getElementById('status').className = 'status success';
+                }
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>📐 MathJax to SVG Converter</h1>
+        
+        <div class="input-section">
+            <label for="input">Paste your Markdown with MathJax here:</label>
+            <textarea id="input" placeholder="Enter markdown content with MathJax formulas...
+
+Example:
+It is given that $\mathcal{E}=\{1,2,3,4,5,6,7\}$, and $A \subseteq \mathcal{E}$.
+
+$$
+\begin{align}
+& S_{1}=A^{\prime} \cap B^{\prime} \cap C^{\prime}, \\
+& S_{2}=A \cap B^{\prime}
+\end{align}
+$$"></textarea>
+        </div>
+        
+        <div class="buttons">
+            <button id="convertBtn" class="primary-btn" disabled onclick="convertContent()">
+                🔄 Convert to SVG
+            </button>
+            <button id="copyBtn" class="secondary-btn" onclick="copyToClipboard()" disabled>
+                📋 Copy to Clipboard
+            </button>
+            <button class="secondary-btn" onclick="clearAll()">
+                🗑️ Clear All
+            </button>
+        </div>
+        
+        <div id="status" class="status info">Loading MathJax...</div>
+        
+        <div class="output-section">
+            <label>Preview:</label>
+            <div id="preview" class="preview">
+                Converted content will appear here...
+            </div>
+            
+            <label for="output">HTML Output (ready to paste):</label>
+            <textarea id="output" readonly placeholder="Converted HTML with SVG will appear here..."></textarea>
+        </div>
+        
+        <div class="example">
+            <h3>💡 How to use:</h3>
+            <p>1. Paste your Markdown content with MathJax formulas above</p>
+            <p>2. Click <strong>Convert to SVG</strong></p>
+            <p>3. Review the preview to ensure formulas rendered correctly</p>
+            <p>4. Click <strong>Copy to Clipboard</strong> to copy the HTML output</p>
+            <p>5. Paste into your HTML document</p>
+            
+            <p><strong>Supported formats:</strong> <code>$inline$</code>, <code>$$display$$</code>, <code>\(inline\)</code>, <code>\[display\]</code>, and <code>\begin{align}</code> environments.</p>
+        </div>
+    </div>
+
+    <script>
+        let convertedOutput = '';
+        
+        function removeFrontmatter(content) {
+            if (content.trim().startsWith('---')) {
+                const lines = content.split('\n');
+                let endIndex = -1;
+                
+                for (let i = 1; i < lines.length; i++) {
+                    if (lines[i].trim() === '---') {
+                        endIndex = i;
+                        break;
+                    }
+                }
+                
+                if (endIndex !== -1) {
+                    const contentWithoutFrontmatter = lines.slice(endIndex + 1).join('\n');
+                    return contentWithoutFrontmatter.replace(/^\s*\n+/, '');
+                }
+            }
+            
+            return content;
+        }
+        
+        function cleanSvg(svgString) {
+            return svgString
+                .replace(/<\?xml[^>]*\?>/g, '')
+                .replace(/<!DOCTYPE[^>]*>/g, '')
+                .replace(/xmlns:xlink="[^"]*"/g, '')
+                .replace(/xmlns="[^"]*"/g, '')
+                .replace(/role="img"/g, '')
+                .replace(/focusable="false"/g, '')
+                .replace(/aria-labelledby="[^"]*"/g, '')
+                .replace(/<title[^>]*>.*?<\/title>/gs, '')
+                .replace(/<desc[^>]*>.*?<\/desc>/gs, '')
+                .replace(/\u00A0/g, ' ')
+                .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+        
+        async function convertMathToSvg(mathContent, isDisplay = false) {
+            try {
+                // Handle align environments
+                let cleanMath = mathContent.trim();
+                if (cleanMath.includes('\\begin{align}')) {
+                    const alignMatch = cleanMath.match(/\\begin\{align\}([\s\S]*?)\\end\{align\}/);
+                    if (alignMatch) {
+                        const alignContent = alignMatch[1];
+                        const lines = alignContent.split('\\\\').map(line => 
+                            line.replace(/&\s*/g, '').trim()
+                        ).filter(line => line && line !== '');
+                        
+                        if (lines.length > 1) {
+                            cleanMath = `\\begin{array}{l} ${lines.join(' \\\\\\\\ ')} \\end{array}`;
+                        } else {
+                            cleanMath = lines[0] || '';
+                        }
+                    }
+                }
+                
+                // Create a temporary element for MathJax to process
+                const tempDiv = document.createElement('div');
+                tempDiv.style.display = 'none';
+                if (isDisplay) {
+                    tempDiv.innerHTML = `$$${cleanMath}$$`;
+                } else {
+                    tempDiv.innerHTML = `$${cleanMath}$`;
+                }
+                document.body.appendChild(tempDiv);
+                
+                // Process with MathJax
+                await MathJax.typesetPromise([tempDiv]);
+                
+                // Extract the SVG
+                const svgElement = tempDiv.querySelector('svg');
+                if (svgElement) {
+                    const svgString = cleanSvg(svgElement.outerHTML);
+                    document.body.removeChild(tempDiv);
+                    return svgString;
+                } else {
+                    document.body.removeChild(tempDiv);
+                    return `<!-- Failed to convert: ${cleanMath.substring(0, 50)}... -->`;
+                }
+            } catch (error) {
+                console.error('Error converting math:', error);
+                return `<!-- Error converting: ${mathContent.substring(0, 50)}... -->`;
+            }
+        }
+        
+        async function convertContent() {
+            const input = document.getElementById('input').value;
+            const statusEl = document.getElementById('status');
+            const convertBtn = document.getElementById('convertBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            
+            if (!input.trim()) {
+                statusEl.textContent = 'Please enter some content to convert.';
+                statusEl.className = 'status error';
+                return;
+            }
+            
+            convertBtn.disabled = true;
+            statusEl.textContent = 'Converting...';
+            statusEl.className = 'status info';
+            
+            try {
+                let content = removeFrontmatter(input);
+                
+                // Process display math blocks ($$...$$)
+                const displayMatches = content.match(/\$\$([\s\S]*?)\$\$/g);
+                if (displayMatches) {
+                    for (const match of displayMatches) {
+                        const mathContent = match.slice(2, -2);
+                        const svg = await convertMathToSvg(mathContent, true);
+                        content = content.replace(match, svg);
+                    }
+                }
+                
+                // Process inline math ($...$)
+                const inlineMatches = content.match(/(?<!\$)\$(?!\$)((?:[^$\\]|\\.)*)(?<!\$)\$(?!\$)/g);
+                if (inlineMatches) {
+                    for (const match of inlineMatches) {
+                        const mathContent = match.slice(1, -1);
+                        const svg = await convertMathToSvg(mathContent, false);
+                        content = content.replace(match, svg);
+                    }
+                }
+                
+                // Process LaTeX blocks (\[...\] and \(...\))
+                const displayLatexMatches = content.match(/\\\[([\s\S]*?)\\\]/g);
+                if (displayLatexMatches) {
+                    for (const match of displayLatexMatches) {
+                        const mathContent = match.slice(2, -2);
+                        const svg = await convertMathToSvg(mathContent, true);
+                        content = content.replace(match, svg);
+                    }
+                }
+                
+                const inlineLatexMatches = content.match(/\\\(([\s\S]*?)\\\)/g);
+                if (inlineLatexMatches) {
+                    for (const match of inlineLatexMatches) {
+                        const mathContent = match.slice(2, -2);
+                        const svg = await convertMathToSvg(mathContent, false);
+                        content = content.replace(match, svg);
+                    }
+                }
+                
+                convertedOutput = content;
+                document.getElementById('output').value = content;
+                document.getElementById('preview').innerHTML = content;
+                
+                statusEl.textContent = '✅ Conversion completed successfully!';
+                statusEl.className = 'status success';
+                copyBtn.disabled = false;
+                
+            } catch (error) {
+                statusEl.textContent = `❌ Error: ${error.message}`;
+                statusEl.className = 'status error';
+            } finally {
+                convertBtn.disabled = false;
+            }
+        }
+        
+        async function copyToClipboard() {
+            const copyBtn = document.getElementById('copyBtn');
+            const statusEl = document.getElementById('status');
+            
+            if (!convertedOutput) {
+                statusEl.textContent = 'Nothing to copy. Please convert content first.';
+                statusEl.className = 'status error';
+                return;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(convertedOutput);
+                copyBtn.textContent = '✅ Copied!';
+                statusEl.textContent = '📋 Content copied to clipboard!';
+                statusEl.className = 'status success';
+                
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copy to Clipboard';
+                }, 2000);
+            } catch (error) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = convertedOutput;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                copyBtn.textContent = '✅ Copied!';
+                statusEl.textContent = '📋 Content copied to clipboard!';
+                statusEl.className = 'status success';
+                
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copy to Clipboard';
+                }, 2000);
+            }
+        }
+        
+        function clearAll() {
+            document.getElementById('input').value = '';
+            document.getElementById('output').value = '';
+            document.getElementById('preview').innerHTML = 'Converted content will appear here...';
+            document.getElementById('copyBtn').disabled = true;
+            convertedOutput = '';
+            
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = 'Ready to convert!';
+            statusEl.className = 'status info';
+        }
+        
+        // Add keyboard shortcut
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                convertContent();
+            }
+        });
+    </script>
+</body>
+</html>
