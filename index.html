@@ -232,7 +232,8 @@ $$"></textarea>
             <p>4. Click <strong>Copy to Clipboard</strong> to copy the HTML output</p>
             <p>5. Paste into your HTML document</p>
             
-            <p><strong>Supported formats:</strong> <code>$inline$</code>, <code>$$display$$</code>, <code>\(inline\)</code>, <code>\[display\]</code>, and <code>\begin{align}</code> environments.</p>
+            <p><strong>Supported formats:</strong> <code>$inline$</code>, <code>$display$</code>, <code>\(inline\)</code>, <code>\[display\]</code>, and <code>\begin{align}</code> environments.</p>
+            <p><strong>Line breaks:</strong> Markdown line breaks are automatically converted to HTML <code>&lt;br/&gt;</code> tags to preserve document structure.</p>
         </div>
     </div>
 
@@ -258,6 +259,38 @@ $$"></textarea>
             }
             
             return content;
+        }
+        
+        function preserveLineBreaks(content) {
+            // Split content into lines and process each one
+            const lines = content.split('\n');
+            const processedLines = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const nextLine = lines[i + 1];
+                
+                // Add the current line
+                processedLines.push(line);
+                
+                // Add line breaks based on markdown rules
+                if (i < lines.length - 1) { // Not the last line
+                    if (line.trim() === '' && nextLine && nextLine.trim() === '') {
+                        // Multiple blank lines - preserve as paragraph break
+                        processedLines.push('<br/>');
+                    } else if (line.trim() === '') {
+                        // Single blank line - paragraph break
+                        processedLines.push('<br/>');
+                    } else if (nextLine && nextLine.trim() !== '') {
+                        // Line with content followed by another line with content - add line break
+                        processedLines.push('<br/>');
+                    }
+                    // If current line has content and next line is empty, don't add extra break
+                    // The empty line will be handled in the next iteration
+                }
+            }
+            
+            return processedLines.join('\n');
         }
         
         function cleanSvg(svgString) {
@@ -345,7 +378,7 @@ $$"></textarea>
             try {
                 let content = removeFrontmatter(input);
                 
-                // Process display math blocks ($$...$$)
+                // Process display math blocks ($...$)
                 const displayMatches = content.match(/\$\$([\s\S]*?)\$\$/g);
                 if (displayMatches) {
                     for (const match of displayMatches) {
@@ -383,6 +416,9 @@ $$"></textarea>
                         content = content.replace(match, svg);
                     }
                 }
+                
+                // Preserve line breaks by converting to HTML breaks
+                content = preserveLineBreaks(content);
                 
                 convertedOutput = content;
                 document.getElementById('output').value = content;
