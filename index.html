@@ -447,9 +447,12 @@ $$"></textarea>
             }
             
             try {
-                await navigator.clipboard.writeText(convertedOutput);
+                // Apply line breaks to the converted output before copying
+                const processedOutput = preserveLineBreaks(convertedOutput);
+                
+                await navigator.clipboard.writeText(processedOutput);
                 copyBtn.textContent = '✅ Copied!';
-                statusEl.textContent = '📋 Content copied to clipboard!';
+                statusEl.textContent = '📋 Content copied to clipboard with line breaks!';
                 statusEl.className = 'status success';
                 
                 setTimeout(() => {
@@ -458,14 +461,15 @@ $$"></textarea>
             } catch (error) {
                 // Fallback for older browsers
                 const textArea = document.createElement('textarea');
-                textArea.value = convertedOutput;
+                const processedOutput = preserveLineBreaks(convertedOutput);
+                textArea.value = processedOutput;
                 document.body.appendChild(textArea);
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
                 
                 copyBtn.textContent = '✅ Copied!';
-                statusEl.textContent = '📋 Content copied to clipboard!';
+                statusEl.textContent = '📋 Content copied to clipboard with line breaks!';
                 statusEl.className = 'status success';
                 
                 setTimeout(() => {
